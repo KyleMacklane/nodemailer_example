@@ -1,69 +1,42 @@
-const express = require('express');
-const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
-const cors = require('cors');
-const path = require('path');
 
-const app = express();
-const port = 3000;
+export default async (req, res) => {
+    if (req.method === 'POST') {
+        const { names, email, checkin, checkout, adult, children, room, message } = req.body;
 
-// Middleware to parse JSON and URL-encoded bodies
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+        // Create a transporter object using the default SMTP transport
+        let transporter = nodemailer.createTransport({
+           service:'gmail',
+            auth: {
+                user: 'makabai362@gmail.com', // Replace with your email
+                pass: 'sxhh sqpv szar ukzb', // Replace with your email password
+            },
+        });
 
+        // Send mail with defined transport object
+        try {
+            let info = await transporter.sendMail({
+                from: '"Hotel Booking" <makabai362@gmail.com>', // sender address
+                to: 'client-email@example.com', // list of receivers
+                subject: 'New Booking Request', // Subject line
+                text: `You have a new booking request: 
+                Names: ${names}
+                Email: ${email}
+                Check-in: ${checkin}
+                Check-out: ${checkout}
+                Adults: ${adult}
+                Children: ${children}
+                Room: ${room}
+                Message: ${message}`, // plain text body
+            });
 
-//Middleware to enable cors
-app.use(cors());
-
-// Serve the frontend files
-app.use(express.static(path.join(__dirname, '../frontend')));
-
-// Define a route to handle form submission
-app.post('/submit-booking', (req, res) => {
-    // Retrieve form data from request body
-    const {names, email, checkin, checkout, adult, children, room, message } = req.body;
-    // console.log(req.body)
-
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'makabai362@gmail.com', // Your Gmail email address
-        pass: 'sxhh sqpv szar ukzb' // Your Gmail password
-    }
-});
-
-    // Email content
-    const mailOptions = {
-        from: 'makabai362@gmail.com', // Sender address
-        to: 'kylemacklane@gmail.com', // Receiver address
-        subject: 'New Room Booking', // Subject line
-        text: `Room Booking Details:
-        names: ${names}
-        email: ${email}
-        Check-in: ${checkin}
-        Check-out: ${checkout}
-        Adults: ${adult}
-        Child: ${children}
-        Room: ${room}
-        Special-Request: ${message}       
-        
-        `
-    };
-
-    // Send email
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
+            console.log('Message sent: %s', info.messageId);
+            res.status(200).json({ message: 'Email sent successfully' });
+        } catch (error) {
             console.error('Error sending email:', error);
-            res.status(500).send('Error sending email');
-        } else {
-            console.log('Email sent:', info.response);
-            res.status(200).send('Booking submitted successfully!');
+            res.status(500).json({ message: 'Failed to send email' });
         }
-    });
-});
-
-// Start the server
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-});
+    } else {
+        res.status(405).json({ message: 'Method not allowed' });
+    }
+};
